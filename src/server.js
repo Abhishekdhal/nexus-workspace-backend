@@ -27,6 +27,11 @@ app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/growth', growthRoutes);
 
+// Root route
+app.get('/', (req, res) => {
+  res.send('Nexus Workspace API is running...');
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
