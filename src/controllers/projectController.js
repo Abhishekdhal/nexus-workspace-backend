@@ -184,11 +184,28 @@ const updateProject = async (req, res) => {
     const project = await Project.findById(req.params.id);
 
     if (!project) return res.status(404).json({ success: false, message: 'Project not found' });
-    if (project.leadId.toString() !== req.user.id) return res.status(401).json({ success: false, message: 'Not authorized' });
 
-    if (req.body.projectName) project.projectName = req.body.projectName;
-    if (req.body.about) project.about = req.body.about;
-    if (req.body.isCompleted !== undefined) project.isCompleted = req.body.isCompleted;
+    const isLead = project.leadId.toString() === req.user.id;
+    const isMember = project.members.includes(req.user.id);
+
+    if (!isLead && !isMember) {
+      return res.status(401).json({ success: false, message: 'Not authorized' });
+    }
+
+    if (req.body.projectName) {
+      if (!isLead) return res.status(401).json({ success: false, message: 'Only lead can update project name' });
+      project.projectName = req.body.projectName;
+    }
+    
+    if (req.body.isCompleted !== undefined) {
+      if (!isLead) return res.status(401).json({ success: false, message: 'Only lead can mark project complete' });
+      project.isCompleted = req.body.isCompleted;
+    }
+
+    // Both lead and members can update about
+    if (req.body.about) {
+      project.about = req.body.about;
+    }
 
     const updatedProject = await project.save();
     res.json({ success: true, data: updatedProject });

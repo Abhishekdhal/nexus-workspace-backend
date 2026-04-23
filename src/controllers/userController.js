@@ -28,13 +28,7 @@ const getProfile = async (req, res) => {
         }
       }
 
-      // If user hasn't posted today AND hasn't posted yesterday, their streak is 0
-      if (!hasPostedToday) {
-        if (!user.lastPostedAt || user.lastPostedAt < yesterdayStart) {
-          user.streakCount = 0;
-          await user.save();
-        }
-      }
+      // Streak is managed additively now, no reset logic required here.
 
       res.json({
         success: true,
