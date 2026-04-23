@@ -102,8 +102,58 @@ const updateProfile = async (req, res) => {
   }
 };
 
+// @desc    Get pending users
+// @route   GET /api/users/pending
+// @access  Private/Admin
+const getPendingUsers = async (req, res) => {
+  try {
+    const users = await User.find({ isApproved: false, role: 'user' }).select('-password');
+    res.json({ success: true, data: users });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Approve user
+// @route   PUT /api/users/approve/:id
+// @access  Private/Admin
+const approveUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (user) {
+      user.isApproved = true;
+      await user.save();
+      res.json({ success: true, message: 'User approved' });
+    } else {
+      res.status(404).json({ success: false, message: 'User not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Reject user
+// @route   DELETE /api/users/reject/:id
+// @access  Private/Admin
+const rejectUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (user) {
+      await user.deleteOne();
+      res.json({ success: true, message: 'User rejected and removed' });
+    } else {
+      res.status(404).json({ success: false, message: 'User not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getProfile,
   getLeaderboard,
-  updateProfile
+  updateProfile,
+  getPendingUsers,
+  approveUser,
+  rejectUser
 };

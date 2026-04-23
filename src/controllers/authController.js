@@ -16,6 +16,10 @@ const signup = async (req, res) => {
   try {
     const { name, email, password, domain, role } = req.body;
 
+    if (!email.endsWith('@kiit.ac.in')) {
+      return res.status(400).json({ success: false, message: 'Only @kiit.ac.in emails are allowed' });
+    }
+
     // Check if user exists
     const userExists = await User.findOne({ email });
 
@@ -35,12 +39,8 @@ const signup = async (req, res) => {
     if (user) {
       res.status(201).json({
         success: true,
+        message: 'Signup successful. Pending admin approval.',
         _id: user.id,
-        name: user.name,
-        email: user.email,
-        domain: user.domain,
-        role: user.role,
-        token: generateToken(user._id),
       });
     } else {
       res.status(400).json({ success: false, message: 'Invalid user data' });
@@ -69,6 +69,10 @@ const login = async (req, res) => {
 
     if (!isMatch) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+
+    if (!user.isApproved && user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Your account is pending admin approval' });
     }
 
     res.json({

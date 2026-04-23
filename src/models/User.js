@@ -31,6 +31,10 @@ const UserSchema = new mongoose.Schema({
     enum: ['user', 'admin'],
     default: 'user'
   },
+  isApproved: {
+    type: Boolean,
+    default: false
+  },
   streakCount: {
     type: Number,
     default: 0
