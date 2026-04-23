@@ -5,12 +5,13 @@ const Project = require('../models/Project');
 // @access  Private
 const createProject = async (req, res) => {
   try {
-    const { projectName, about, domain } = req.body;
+    const { projectName, about, domain, deadline } = req.body;
 
     const project = await Project.create({
       projectName,
       about,
       domain,
+      deadline,
       leadId: req.user.id
     });
 
@@ -36,6 +37,7 @@ const getProjects = async (req, res) => {
     const projects = await Project.find(filter)
       .populate('leadId', 'name email domain')
       .populate('members', 'name email domain')
+      .populate('joinRequests', 'name email domain')
       .sort({ createdAt: -1 });
 
     res.json({
@@ -195,6 +197,62 @@ const updateProject = async (req, res) => {
   }
 };
 
+// @desc    Request deadline extension
+// @route   POST /api/projects/:id/extension-request
+// @access  Private
+const requestExtension = async (req, res) => {
+  try {
+    const { requestedDate, reason } = req.body;
+    const project = await Project.findById(req.params.id);
+
+    if (!project) return res.status(404).json({ success: false, message: 'Project not found' });
+    if (project.leadId.toString() !== req.user.id) return res.status(401).json({ success: false, message: 'Only the project lead can request an extension' });
+    if (project.isCompleted) return res.status(400).json({ success: false, message: 'Cannot extend a completed project' });
+
+    project.extensionRequest = {
+      requestedDate,
+      reason,
+      status: 'pending'
+    };
+
+    const updatedProject = await project.save();
+    res.json({ success: true, data: updatedProject });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Review deadline extension (Accept/Reject)
+// @route   PUT /api/projects/:id/extension-review
+// @access  Private (Admin only)
+const reviewExtension = async (req, res) => {
+  try {
+    const { status } = req.body; // 'accepted' or 'rejected'
+    const project = await Project.findById(req.params.id);
+
+    if (!project) return res.status(404).json({ success: false, message: 'Project not found' });
+    if (req.user.role !== 'admin') return res.status(401).json({ success: false, message: 'Only admins can review extensions' });
+
+    if (!project.extensionRequest || project.extensionRequest.status !== 'pending') {
+      return res.status(400).json({ success: false, message: 'No pending extension request found' });
+    }
+
+    if (status === 'accepted') {
+      project.deadline = project.extensionRequest.requestedDate;
+      project.extensionRequest.status = 'accepted';
+    } else if (status === 'rejected') {
+      project.extensionRequest.status = 'rejected';
+    } else {
+      return res.status(400).json({ success: false, message: 'Invalid status' });
+    }
+
+    const updatedProject = await project.save();
+    res.json({ success: true, data: updatedProject });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   createProject,
   getProjects,
@@ -202,5 +260,7 @@ module.exports = {
   acceptRequest,
   rejectRequest,
   updateProject,
-  deleteProject
+  deleteProject,
+  requestExtension,
+  reviewExtension
 };

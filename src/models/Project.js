@@ -13,6 +13,19 @@ const ProjectSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please add a domain']
   },
+  deadline: {
+    type: Date,
+    required: true
+  },
+  extensionRequest: {
+    requestedDate: { type: Date },
+    reason: { type: String },
+    status: {
+      type: String,
+      enum: ['none', 'pending', 'accepted', 'rejected'],
+      default: 'none'
+    }
+  },
   leadId: {
     type: mongoose.Schema.ObjectId,
     ref: 'User',

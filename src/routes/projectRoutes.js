@@ -6,7 +6,9 @@ const {
   acceptRequest,
   rejectRequest,
   updateProject,
-  deleteProject
+  deleteProject,
+  requestExtension,
+  reviewExtension
 } = require('../controllers/projectController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -23,5 +25,8 @@ router.post('/:id/reject-request', protect, rejectRequest);
 router.route('/:id')
   .put(protect, updateProject)
   .delete(protect, deleteProject);
+
+router.post('/:id/extension-request', protect, requestExtension);
+router.put('/:id/extension-review', protect, reviewExtension);
 
 module.exports = router;

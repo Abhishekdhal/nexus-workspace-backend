@@ -8,6 +8,34 @@ const getProfile = async (req, res) => {
     const user = await User.findById(req.user.id);
     
     if (user) {
+      const now = new Date();
+      let hasPostedToday = false;
+
+      // Calculate start and end of yesterday
+      const yesterdayStart = new Date(now);
+      yesterdayStart.setDate(now.getDate() - 1);
+      yesterdayStart.setHours(0, 0, 0, 0);
+
+      // Check if they posted today
+      if (user.lastPostedAt) {
+        const todayStart = new Date(now);
+        todayStart.setHours(0, 0, 0, 0);
+        const todayEnd = new Date(now);
+        todayEnd.setHours(23, 59, 59, 999);
+        
+        if (user.lastPostedAt >= todayStart && user.lastPostedAt <= todayEnd) {
+          hasPostedToday = true;
+        }
+      }
+
+      // If user hasn't posted today AND hasn't posted yesterday, their streak is 0
+      if (!hasPostedToday) {
+        if (!user.lastPostedAt || user.lastPostedAt < yesterdayStart) {
+          user.streakCount = 0;
+          await user.save();
+        }
+      }
+
       res.json({
         success: true,
         _id: user.id,
@@ -15,7 +43,8 @@ const getProfile = async (req, res) => {
         email: user.email,
         domain: user.domain,
         role: user.role,
-        streakCount: user.streakCount
+        streakCount: user.streakCount,
+        hasPostedToday
       });
     } else {
       res.status(404).json({ success: false, message: 'User not found' });

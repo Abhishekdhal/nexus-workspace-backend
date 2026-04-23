@@ -34,6 +34,10 @@ const UserSchema = new mongoose.Schema({
   streakCount: {
     type: Number,
     default: 0
+  },
+  lastPostedAt: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true
