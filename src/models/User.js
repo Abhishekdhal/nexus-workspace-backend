@@ -42,6 +42,19 @@ const UserSchema = new mongoose.Schema({
   lastPostedAt: {
     type: Date,
     default: null
+  },
+  otp: {
+    type: String
+  },
+  otpExpire: {
+    type: Date
+  },
+  otpRequestCount: {
+    type: Number,
+    default: 0
+  },
+  otpRequestDate: {
+    type: Date
   }
 }, {
   timestamps: true

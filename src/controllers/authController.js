@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const sendEmail = require('../utils/sendEmail');
 
 // Generate JWT
 const generateToken = (id) => {
@@ -89,7 +90,106 @@ const login = async (req, res) => {
   }
 };
 
+// @desc    Forgot Password
+// @route   POST /api/auth/forgot-password
+// @access  Public
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Reset daily counter if it's a new day
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (!user.otpRequestDate || user.otpRequestDate < today) {
+      user.otpRequestCount = 0;
+      user.otpRequestDate = today;
+    }
+
+    // Check limit
+    if (user.otpRequestCount >= 3) {
+      return res.status(429).json({ success: false, message: 'Maximum OTP requests reached for today' });
+    }
+
+    // Generate 4-digit OTP
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+
+    // Save to user
+    user.otp = otp;
+    user.otpExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+    user.otpRequestCount += 1;
+
+    // We only want to run validation on the modified fields, but since we are saving
+    // we should make sure other fields don't cause validation issues if they are not present.
+    await user.save({ validateModifiedOnly: true });
+
+    // Send email
+    const message = `
+      <h1>Password Reset Request</h1>
+      <p>Your 4-digit OTP is: <strong>${otp}</strong></p>
+      <p>It will expire in 10 minutes.</p>
+    `;
+
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'Password Reset OTP',
+        html: message,
+      });
+
+      res.status(200).json({ success: true, message: 'OTP sent to email' });
+    } catch (error) {
+      user.otp = undefined;
+      user.otpExpire = undefined;
+      await user.save({ validateModifiedOnly: true });
+      return res.status(500).json({ success: false, message: 'Email could not be sent' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Reset Password
+// @route   POST /api/auth/reset-password
+// @access  Public
+const resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (!user.otp || user.otp !== otp) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP' });
+    }
+
+    if (user.otpExpire < Date.now()) {
+      return res.status(400).json({ success: false, message: 'OTP has expired' });
+    }
+
+    user.password = newPassword;
+    user.otp = undefined;
+    user.otpExpire = undefined;
+
+    await user.save();
+
+    res.status(200).json({ success: true, message: 'Password reset successful' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   signup,
-  login
+  login,
+  forgotPassword,
+  resetPassword
 };
