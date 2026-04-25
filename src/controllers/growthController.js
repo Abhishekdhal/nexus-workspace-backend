@@ -35,14 +35,18 @@ const createGrowthPost = async (req, res) => {
 
     // Increment user's streakCount
     const user = await User.findById(req.user.id);
+    let currentStreak = 0;
     if (user) {
       user.streakCount += 1;
+      user.lastPostedAt = new Date();
       await user.save();
+      currentStreak = user.streakCount;
     }
 
     res.status(201).json({
       success: true,
-      data: growth
+      data: growth,
+      streakCount: currentStreak
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

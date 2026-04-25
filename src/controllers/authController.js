@@ -83,6 +83,7 @@ const login = async (req, res) => {
       email: user.email,
       domain: user.domain,
       role: user.role,
+      streakCount: user.streakCount,
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -144,6 +145,7 @@ const forgotPassword = async (req, res) => {
 
       res.status(200).json({ success: true, message: 'OTP sent to email' });
     } catch (error) {
+      console.error("Email send error:", error);
       user.otp = undefined;
       user.otpExpire = undefined;
       await user.save({ validateModifiedOnly: true });
