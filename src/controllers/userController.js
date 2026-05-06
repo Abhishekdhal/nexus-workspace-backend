@@ -38,7 +38,11 @@ const getProfile = async (req, res) => {
         domain: user.domain,
         role: user.role,
         streakCount: user.streakCount,
-        hasPostedToday
+        hasPostedToday,
+        linkedin: user.linkedin,
+        github: user.github,
+        gmail: user.gmail,
+        profilePhotoUrl: user.profilePhotoUrl
       });
     } else {
       res.status(404).json({ success: false, message: 'User not found' });
@@ -78,6 +82,10 @@ const updateProfile = async (req, res) => {
       user.name = req.body.name || user.name;
       user.email = req.body.email || user.email;
       user.domain = req.body.domain || user.domain;
+      if (req.body.linkedin !== undefined) user.linkedin = req.body.linkedin;
+      if (req.body.github !== undefined) user.github = req.body.github;
+      if (req.body.gmail !== undefined) user.gmail = req.body.gmail;
+      if (req.body.profilePhotoUrl !== undefined) user.profilePhotoUrl = req.body.profilePhotoUrl;
 
       if (req.body.password) {
         user.password = req.body.password;
@@ -92,7 +100,11 @@ const updateProfile = async (req, res) => {
         email: updatedUser.email,
         domain: updatedUser.domain,
         role: updatedUser.role,
-        streakCount: updatedUser.streakCount
+        streakCount: updatedUser.streakCount,
+        linkedin: updatedUser.linkedin,
+        github: updatedUser.github,
+        gmail: updatedUser.gmail,
+        profilePhotoUrl: updatedUser.profilePhotoUrl
       });
     } else {
       res.status(404).json({ success: false, message: 'User not found' });

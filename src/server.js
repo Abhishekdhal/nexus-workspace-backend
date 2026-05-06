@@ -32,6 +32,10 @@ app.get('/', (req, res) => {
   res.send('Nexus Workspace API is running...');
 });
 
+// User Profile Web View
+const { getWebProfile } = require('./controllers/webProfileController');
+app.get('/:id', getWebProfile);
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);

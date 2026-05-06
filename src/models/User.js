@@ -55,6 +55,22 @@ const UserSchema = new mongoose.Schema({
   },
   otpRequestDate: {
     type: Date
+  },
+  linkedin: {
+    type: String,
+    default: ''
+  },
+  github: {
+    type: String,
+    default: ''
+  },
+  gmail: {
+    type: String,
+    default: ''
+  },
+  profilePhotoUrl: {
+    type: String,
+    default: ''
   }
 }, {
   timestamps: true
