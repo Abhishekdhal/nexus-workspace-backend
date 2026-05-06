@@ -226,25 +226,25 @@ const getWebProfile = async (req, res) => {
             <div class="info-value">${email}</div>
         </div>
         
-        ${gmail ? \`
+        ${gmail ? `
         <div class="section-title">GMAIL</div>
         <div class="info-box">
             <div class="info-value">${gmail}</div>
-        </div>\` : ''}
+        </div>` : ''}
 
         <div class="section-title">CONNECT</div>
         <div class="connect-links">
-            ${github ? \`
-            <a href="\${github.startsWith('http') ? github : 'https://github.com/' + github}" class="connect-link" target="_blank">
+            ${github ? `
+            <a href="${github.startsWith('http') ? github : 'https://github.com/' + github}" class="connect-link" target="_blank">
                 <span class="connect-icon">&#128187;</span>
                 GitHub
-            </a>\` : ''}
+            </a>` : ''}
             
-            ${linkedin ? \`
-            <a href="\${linkedin.startsWith('http') ? linkedin : 'https://linkedin.com/in/' + linkedin}" class="connect-link" target="_blank">
+            ${linkedin ? `
+            <a href="${linkedin.startsWith('http') ? linkedin : 'https://linkedin.com/in/' + linkedin}" class="connect-link" target="_blank">
                 <span class="connect-icon">&#128188;</span>
                 LinkedIn
-            </a>\` : ''}
+            </a>` : ''}
         </div>
         
         <div class="footer-text">
