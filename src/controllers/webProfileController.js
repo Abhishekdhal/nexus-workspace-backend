@@ -1,7 +1,11 @@
 const User = require('../models/User');
+const mongoose = require('mongoose');
 
 const getWebProfile = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).send('<h1>Not Found</h1>');
+    }
     const user = await User.findById(req.params.id);
     if (!user) {
       return res.status(404).send('<h1>User not found</h1>');
