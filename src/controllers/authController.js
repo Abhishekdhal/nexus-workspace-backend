@@ -84,6 +84,10 @@ const login = async (req, res) => {
       domain: user.domain,
       role: user.role,
       streakCount: user.streakCount,
+      linkedin: user.linkedin,
+      github: user.github,
+      gmail: user.gmail,
+      profilePhotoUrl: user.profilePhotoUrl,
       token: generateToken(user._id),
     });
   } catch (error) {
