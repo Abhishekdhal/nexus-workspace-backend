@@ -2,6 +2,8 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const sendEmail = require('../utils/sendEmail');
+const { OAuth2Client } = require('google-auth-library');
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Generate JWT
 const generateToken = (id) => {
@@ -193,9 +195,60 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// @desc    Authenticate with Google
+// @route   POST /api/auth/google-login
+// @access  Public
+const googleLogin = async (req, res) => {
+  const { idToken } = req.body;
+  
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    
+    const { email } = ticket.getPayload();
+    
+    // Check if user exists in DB
+    const user = await User.findOne({ email });
+    
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'No account found with this email. Please register first.' 
+      });
+    }
+
+    if (!user.isApproved && user.role !== 'admin') {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Your account is pending admin approval' 
+      });
+    }
+    
+    res.json({
+      success: true,
+      _id: user.id,
+      name: user.name,
+      email: user.email,
+      domain: user.domain,
+      role: user.role,
+      streakCount: user.streakCount,
+      linkedin: user.linkedin,
+      github: user.github,
+      gmail: user.gmail,
+      profilePhotoUrl: user.profilePhotoUrl,
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    res.status(401).json({ success: false, message: 'Invalid Google token' });
+  }
+};
+
 module.exports = {
   signup,
   login,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  googleLogin
 };
