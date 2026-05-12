@@ -58,7 +58,7 @@ const getProfile = async (req, res) => {
 const getLeaderboard = async (req, res) => {
   try {
     const users = await User.find({})
-      .select('name domain streakCount')
+      .select('name domain streakCount profilePhotoUrl')
       .sort({ streakCount: -1 })
       .limit(50); // Get top 50 users
 
@@ -161,11 +161,29 @@ const rejectUser = async (req, res) => {
   }
 };
 
+// @desc    Delete user account (Self)
+// @route   DELETE /api/users/profile
+// @access  Private
+const deleteAccount = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (user) {
+      await user.deleteOne();
+      res.json({ success: true, message: 'Account permanently deleted' });
+    } else {
+      res.status(404).json({ success: false, message: 'User not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getProfile,
   getLeaderboard,
   updateProfile,
   getPendingUsers,
   approveUser,
-  rejectUser
+  rejectUser,
+  deleteAccount
 };
