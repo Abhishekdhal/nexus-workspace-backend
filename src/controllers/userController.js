@@ -178,6 +178,24 @@ const deleteAccount = async (req, res) => {
   }
 };
 
+// @desc    Update FCM token
+// @route   PUT /api/users/fcm-token
+// @access  Private
+const updateFcmToken = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (user) {
+      user.fcmToken = req.body.fcmToken;
+      await user.save();
+      res.json({ success: true, message: 'FCM token updated' });
+    } else {
+      res.status(404).json({ success: false, message: 'User not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getProfile,
   getLeaderboard,
@@ -185,5 +203,6 @@ module.exports = {
   getPendingUsers,
   approveUser,
   rejectUser,
-  deleteAccount
+  deleteAccount,
+  updateFcmToken
 };

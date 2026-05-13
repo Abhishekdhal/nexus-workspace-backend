@@ -2,12 +2,29 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./config/db');
+const admin = require('firebase-admin');
+const path = require('path');
 
 // Load env vars
 dotenv.config();
 
 // Connect to database
 connectDB();
+
+// Initialize Firebase Admin
+if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
+  try {
+    const serviceAccount = require(path.resolve(process.env.FIREBASE_SERVICE_ACCOUNT_PATH));
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+    console.log('Firebase Admin initialized');
+  } catch (error) {
+    console.error('Firebase Admin initialization failed:', error.message);
+  }
+} else {
+  console.warn('FIREBASE_SERVICE_ACCOUNT_PATH not found in environment variables');
+}
 
 const app = express();
 
@@ -20,12 +37,14 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const growthRoutes = require('./routes/growthRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 // Mount routers
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/growth', growthRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Root route
 app.get('/', (req, res) => {
