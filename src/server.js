@@ -12,18 +12,28 @@ dotenv.config();
 connectDB();
 
 // Initialize Firebase Admin
-if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  try {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+    console.log('Firebase Admin initialized from environment variable');
+  } catch (error) {
+    console.error('Firebase Admin initialization from env failed:', error.message);
+  }
+} else if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
   try {
     const serviceAccount = require(path.resolve(process.env.FIREBASE_SERVICE_ACCOUNT_PATH));
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount)
     });
-    console.log('Firebase Admin initialized');
+    console.log('Firebase Admin initialized from file');
   } catch (error) {
-    console.error('Firebase Admin initialization failed:', error.message);
+    console.error('Firebase Admin initialization from file failed:', error.message);
   }
 } else {
-  console.warn('FIREBASE_SERVICE_ACCOUNT_PATH not found in environment variables');
+  console.warn('Firebase Admin credentials not found (FIREBASE_SERVICE_ACCOUNT or FIREBASE_SERVICE_ACCOUNT_PATH)');
 }
 
 const app = express();
