@@ -1,4 +1,5 @@
 const express = require('express');
+const multer = require('multer');
 const {
   createProject,
   getProjects,
@@ -8,11 +9,15 @@ const {
   updateProject,
   deleteProject,
   requestExtension,
-  reviewExtension
+  reviewExtension,
+  uploadLogo
 } = require('../controllers/projectController');
 const { protect } = require('../middleware/authMiddleware');
 
+const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router();
+
+router.post('/upload-logo', protect, upload.single('logo'), uploadLogo);
 
 router.route('/')
   .post(protect, createProject)

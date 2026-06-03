@@ -42,6 +42,22 @@ const ProjectSchema = new mongoose.Schema({
   isCompleted: {
     type: Boolean,
     default: false
+  },
+  githubLink: {
+    type: String,
+    default: ''
+  },
+  documentationLink: {
+    type: String,
+    default: ''
+  },
+  deployedLink: {
+    type: String,
+    default: ''
+  },
+  projectLogoUrl: {
+    type: String,
+    default: ''
   }
 }, {
   timestamps: true

@@ -1,18 +1,23 @@
 const Project = require('../models/Project');
+const { uploadBuffer } = require('../utils/cloudinary');
 
 // @desc    Create a project
 // @route   POST /api/projects
 // @access  Private
 const createProject = async (req, res) => {
   try {
-    const { projectName, about, domain, deadline } = req.body;
+    const { projectName, about, domain, deadline, githubLink, documentationLink, deployedLink, projectLogoUrl } = req.body;
 
     const project = await Project.create({
       projectName,
       about,
       domain,
       deadline,
-      leadId: req.user.id
+      leadId: req.user.id,
+      githubLink: githubLink || '',
+      documentationLink: documentationLink || '',
+      deployedLink: deployedLink || '',
+      projectLogoUrl: projectLogoUrl || ''
     });
 
     res.status(201).json({
@@ -202,9 +207,25 @@ const updateProject = async (req, res) => {
       project.isCompleted = req.body.isCompleted;
     }
 
-    // Both lead and members can update about
+    // Both lead and members can update about and links
     if (req.body.about) {
       project.about = req.body.about;
+    }
+
+    if (req.body.githubLink !== undefined) {
+      project.githubLink = req.body.githubLink;
+    }
+
+    if (req.body.documentationLink !== undefined) {
+      project.documentationLink = req.body.documentationLink;
+    }
+
+    if (req.body.deployedLink !== undefined) {
+      project.deployedLink = req.body.deployedLink;
+    }
+
+    if (req.body.projectLogoUrl !== undefined) {
+      project.projectLogoUrl = req.body.projectLogoUrl;
     }
 
     const updatedProject = await project.save();
@@ -270,6 +291,25 @@ const reviewExtension = async (req, res) => {
   }
 };
 
+const uploadLogo = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Please upload an image file' });
+    }
+
+    // Upload buffer to Cloudinary
+    const result = await uploadBuffer(req.file.buffer, 'nexus_projects');
+
+    res.json({
+      success: true,
+      url: result.secure_url,
+      public_id: result.public_id
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   createProject,
   getProjects,
@@ -279,5 +319,6 @@ module.exports = {
   updateProject,
   deleteProject,
   requestExtension,
-  reviewExtension
+  reviewExtension,
+  uploadLogo
 };
