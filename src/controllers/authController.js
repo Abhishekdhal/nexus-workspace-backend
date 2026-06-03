@@ -137,9 +137,108 @@ const forgotPassword = async (req, res) => {
 
     // Send email
     const message = `
-      <h1>Password Reset Request</h1>
-      <p>Your 4-digit OTP is: <strong>${otp}</strong></p>
-      <p>It will expire in 10 minutes.</p>
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Password Reset OTP</title>
+        <style>
+          body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0f172a;
+            color: #f1f5f9;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+          }
+          .container {
+            max-width: 500px;
+            margin: 40px auto;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 24px;
+          }
+          .logo {
+            font-size: 24px;
+            font-weight: 800;
+            color: #6366f1;
+            letter-spacing: 1px;
+            margin: 0;
+          }
+          .content {
+            text-align: center;
+          }
+          h2 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-top: 0;
+            margin-bottom: 8px;
+          }
+          p {
+            font-size: 15px;
+            color: #94a3b8;
+            line-height: 1.6;
+            margin-top: 0;
+            margin-bottom: 24px;
+          }
+          .otp-container {
+            background-color: #0f172a;
+            border: 2px dashed #4f46e5;
+            border-radius: 12px;
+            padding: 16px 24px;
+            display: inline-block;
+            margin-bottom: 24px;
+          }
+          .otp-code {
+            font-size: 32px;
+            font-weight: 800;
+            color: #38bdf8;
+            letter-spacing: 6px;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+          }
+          .footer {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #334155;
+            text-align: center;
+            font-size: 12px;
+            color: #64748b;
+          }
+          .footer a {
+            color: #6366f1;
+            text-decoration: none;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 class="logo">NEXUS WORKSPACE</h1>
+          </div>
+          <div class="content">
+            <h2>Password Reset Request</h2>
+            <p>We received a request to reset your password. Use the verification code below to proceed. This code is valid for <strong>10 minutes</strong>.</p>
+            <div class="otp-container">
+              <div class="otp-code">${otp}</div>
+            </div>
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 0;">If you didn't request this, you can safely ignore this email.</p>
+          </div>
+          <div class="footer">
+            &copy; ${new Date().getFullYear()} Nexus Workspace. All rights reserved.<br>
+            Made for the <a href="#">KIIT Nexus Community</a>.
+          </div>
+        </div>
+      </body>
+      </html>
     `;
 
     try {
