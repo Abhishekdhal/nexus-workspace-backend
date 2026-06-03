@@ -78,4 +78,19 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  
+  // Local scheduled daily deadline check (for local run or VPS environments)
+  const { checkDeadlinesAndSendReminders } = require('./controllers/projectController');
+  
+  // 1. Initial startup check after 10 seconds
+  setTimeout(() => {
+    console.log('[Scheduler] Running initial startup deadline check...');
+    checkDeadlinesAndSendReminders();
+  }, 10000);
+
+  // 2. Set daily interval (every 24 hours)
+  setInterval(() => {
+    console.log('[Scheduler] Running scheduled daily deadline check...');
+    checkDeadlinesAndSendReminders();
+  }, 24 * 60 * 60 * 1000);
 });

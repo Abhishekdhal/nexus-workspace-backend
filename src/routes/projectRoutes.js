@@ -10,7 +10,8 @@ const {
   deleteProject,
   requestExtension,
   reviewExtension,
-  uploadLogo
+  uploadLogo,
+  cronDeadlineReminder
 } = require('../controllers/projectController');
 const { protect } = require('../middleware/authMiddleware');
 
@@ -18,6 +19,8 @@ const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router();
 
 router.post('/upload-logo', protect, upload.single('logo'), uploadLogo);
+
+router.get('/cron/deadline-reminder', cronDeadlineReminder);
 
 router.route('/')
   .post(protect, createProject)

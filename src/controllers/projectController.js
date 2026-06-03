@@ -1,5 +1,9 @@
 const Project = require('../models/Project');
+const User = require('../models/User');
+const Notification = require('../models/Notification');
 const { uploadBuffer } = require('../utils/cloudinary');
+const { sendPushNotification, sendPushToTopic } = require('../utils/pushNotification');
+const sendEmail = require('../utils/sendEmail');
 
 // @desc    Create a project
 // @route   POST /api/projects
@@ -19,6 +23,34 @@ const createProject = async (req, res) => {
       deployedLink: deployedLink || '',
       projectLogoUrl: projectLogoUrl || ''
     });
+
+    // Send push notifications and save to history
+    try {
+      const leadUser = await User.findById(req.user.id);
+      const leadName = leadUser ? leadUser.name : 'Unknown';
+
+      const title = 'New Project Created 📁';
+      const body = `New project "${projectName}" created under lead "${leadName}".`;
+
+      // 1. Save to database history
+      await Notification.create({
+        title,
+        message: body,
+        type: 'broadcast'
+      });
+
+      // 2. Send via topic to all users
+      await sendPushToTopic('all_users', title, body);
+
+      // 3. Send direct push to all users with tokens
+      const users = await User.find({ fcmToken: { $ne: '' } });
+      const tokens = users.map(u => u.fcmToken);
+      if (tokens.length > 0) {
+        await sendPushNotification(tokens, title, body);
+      }
+    } catch (pushErr) {
+      console.error('Error sending project creation push notifications:', pushErr.message);
+    }
 
     res.status(201).json({
       success: true,
@@ -254,6 +286,23 @@ const requestExtension = async (req, res) => {
     };
 
     const updatedProject = await project.save();
+
+    // Send push notification to all admins
+    try {
+      const admins = await User.find({ role: 'admin', fcmToken: { $ne: '' } });
+      const adminTokens = admins.map(a => a.fcmToken);
+      if (adminTokens.length > 0) {
+        const formattedDate = new Date(requestedDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+        await sendPushNotification(
+          adminTokens,
+          '⏰ Extension Request',
+          `Lead of "${project.projectName}" requested extension till ${formattedDate}.`
+        );
+      }
+    } catch (pushErr) {
+      console.error('Error sending extension request notification:', pushErr.message);
+    }
+
     res.json({ success: true, data: updatedProject });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -285,6 +334,24 @@ const reviewExtension = async (req, res) => {
     }
 
     const updatedProject = await project.save();
+
+    // Send push notification to project lead and members
+    try {
+      const recipientIds = [project.leadId, ...(project.members || [])].filter(Boolean);
+      const recipients = await User.find({ _id: { $in: recipientIds }, fcmToken: { $ne: '' } });
+      const recipientTokens = recipients.map(u => u.fcmToken);
+      
+      if (recipientTokens.length > 0) {
+        await sendPushNotification(
+          recipientTokens,
+          `Extension Request ${status === 'accepted' ? 'Approved' : 'Rejected'}`,
+          `Your extension request for project "${project.projectName}" has been ${status === 'accepted' ? 'accepted' : 'rejected'}.`
+        );
+      }
+    } catch (pushErr) {
+      console.error('Error sending extension review notification:', pushErr.message);
+    }
+
     res.json({ success: true, data: updatedProject });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -310,6 +377,79 @@ const uploadLogo = async (req, res) => {
   }
 };
 
+const checkDeadlinesAndSendReminders = async () => {
+  try {
+    const now = new Date();
+    
+    // We want to find projects where the deadline is in exactly 2 days.
+    const targetStart = new Date();
+    targetStart.setDate(now.getDate() + 2);
+    targetStart.setHours(0, 0, 0, 0);
+
+    const targetEnd = new Date();
+    targetEnd.setDate(now.getDate() + 2);
+    targetEnd.setHours(23, 59, 59, 999);
+
+    const projects = await Project.find({
+      isCompleted: false,
+      deadline: {
+        $gte: targetStart,
+        $lte: targetEnd
+      }
+    });
+
+    console.log(`[Cron] Checking deadlines: found ${projects.length} projects ending in 2 days.`);
+
+    for (const project of projects) {
+      const recipientIds = [project.leadId, ...(project.members || [])].filter(Boolean);
+      const recipients = await User.find({ _id: { $in: recipientIds } });
+      
+      // Send push notification
+      const fcmTokens = recipients.map(u => u.fcmToken).filter(t => t && t.trim() !== '');
+      if (fcmTokens.length > 0) {
+        await sendPushNotification(
+          fcmTokens,
+          '⏰ Project Deadline Reminder',
+          `Your project "${project.projectName}" is ending in 2 days (on ${new Date(project.deadline).toLocaleDateString()}). Please complete it or request an extension.`
+        );
+      }
+
+      // Send email notification
+      const emails = recipients.map(u => u.email).filter(Boolean);
+      for (const email of emails) {
+        const html = `
+          <h2>Deadline Reminder: ${project.projectName}</h2>
+          <p>Your project <strong>${project.projectName}</strong> is due in 2 days on <strong>${new Date(project.deadline).toLocaleDateString()}</strong>.</p>
+          <p>Please complete it or request a deadline extension through the app.</p>
+          <br/>
+          <p>Regards,<br/>Nexus Workspace Team</p>
+        `;
+        try {
+          await sendEmail({
+            email,
+            subject: `⏰ Deadline Reminder: ${project.projectName}`,
+            html
+          });
+          console.log(`Sent deadline reminder email to ${email}`);
+        } catch (emailErr) {
+          console.error(`Failed to send email to ${email}:`, emailErr.message);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error running daily deadline check:', error);
+  }
+};
+
+const cronDeadlineReminder = async (req, res) => {
+  try {
+    await checkDeadlinesAndSendReminders();
+    res.json({ success: true, message: 'Cron job executed successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   createProject,
   getProjects,
@@ -320,5 +460,7 @@ module.exports = {
   deleteProject,
   requestExtension,
   reviewExtension,
-  uploadLogo
+  uploadLogo,
+  checkDeadlinesAndSendReminders,
+  cronDeadlineReminder
 };
